@@ -1,5 +1,5 @@
 # =============================================================================
-# pptspeech-entraid.ps1
+# text-to-speech-entraid.ps1
 # Azure AI Speech – Text-to-Speech (TTS) using Microsoft Entra ID authentication
 # =============================================================================
 # Prerequisites:
@@ -11,7 +11,7 @@
 # Usage:
 #   1. Set $resourceName below to your Azure AI Speech resource name
 #   2. Place SSML XML files in the .\ssml\ folder
-#   3. Run: .\pptspeech-entraid.ps1
+#   3. Run: .\text-to-speech-entraid.ps1
 #   4. WAV files will be created in the .\audio\ folder
 # =============================================================================
 
@@ -36,9 +36,31 @@ if ($tokenResult.Token -is [System.Security.SecureString]) {
 }
 
 # ---------- Process SSML files ----------
-Get-ChildItem $inDir -Filter *.xml | ForEach-Object {
-    $ssml    = Get-Content $_.FullName -Raw
-    $outFile = Join-Path $outDir ($_.BaseName + ".wav")
+$files = @(Get-ChildItem $inDir -Filter *.xml)
+$total = $files.Count
+$overwriteAll = $false
+$skipAll = $false
+
+for ($i = 0; $i -lt $total; $i++) {
+    $file = $files[$i]
+    $ssml    = Get-Content $file.FullName -Raw
+    $outFile = Join-Path $outDir ($file.BaseName + ".wav")
+
+    Write-Progress -Activity "Generating audio" -Status "$($file.Name) ($($i+1)/$total)" `
+        -PercentComplete (($i / $total) * 100)
+
+    # Check for existing file
+    if (Test-Path $outFile) {
+        if ($skipAll) { Write-Host "Skipped: $($file.BaseName).wav"; continue }
+        if (-not $overwriteAll) {
+            $choice = Read-Host "$($file.BaseName).wav already exists. [S]kip / [O]verwrite / Skip [A]ll / Overwrite A[l]l"
+            switch ($choice.ToUpper()) {
+                'S' { Write-Host "Skipped: $($file.BaseName).wav"; continue }
+                'A' { $skipAll = $true; Write-Host "Skipped: $($file.BaseName).wav"; continue }
+                'L' { $overwriteAll = $true }
+            }
+        }
+    }
 
     # Entra ID auth requires the custom-domain endpoint (not the regional endpoint)
     $uri = "https://$resourceName.cognitiveservices.azure.com/tts/cognitiveservices/v1"
@@ -52,5 +74,5 @@ Get-ChildItem $inDir -Filter *.xml | ForEach-Object {
     Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -Body $ssml -OutFile $outFile
     Write-Host "Created: $outFile"
 }
-
-Write-Host "Done."
+Write-Progress -Activity "Generating audio" -Completed
+Write-Host "Done: $total files processed."

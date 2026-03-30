@@ -20,9 +20,32 @@ if ($tokenResult.Token -is [System.Security.SecureString]) {
   $accessToken = $tokenResult.Token
 }
 
-Get-ChildItem $inDir -Filter *.xml | ForEach-Object {
-  $ssml = Get-Content $_.FullName -Raw
-  $outFile = Join-Path $outDir ($_.BaseName + ".wav")
+$files = @(Get-ChildItem $inDir -Filter *.xml)
+$total = $files.Count
+$overwriteAll = $false
+$skipAll = $false
+
+for ($i = 0; $i -lt $total; $i++) {
+  $file = $files[$i]
+  $ssml = Get-Content $file.FullName -Raw
+  $outFile = Join-Path $outDir ($file.BaseName + ".wav")
+
+  Write-Progress -Activity "Generating audio" -Status "$($file.Name) ($($i+1)/$total)" `
+    -PercentComplete (($i / $total) * 100)
+
+  # 既存ファイルの確認
+  if (Test-Path $outFile) {
+    if ($skipAll) { Write-Host "Skipped: $($file.BaseName).wav"; continue }
+    if (-not $overwriteAll) {
+      $choice = Read-Host "$($file.BaseName).wav already exists. [S]kip / [O]verwrite / Skip [A]ll / Overwrite A[l]l"
+      switch ($choice.ToUpper()) {
+        'S' { Write-Host "Skipped: $($file.BaseName).wav"; continue }
+        'A' { $skipAll = $true; Write-Host "Skipped: $($file.BaseName).wav"; continue }
+        'L' { $overwriteAll = $true }
+        # 'O' or default: proceed to overwrite this one
+      }
+    }
+  }
 
   # Entra ID 認証はカスタムドメインエンドポイントが必要
   $uri = "https://$resourceName.cognitiveservices.azure.com/tts/cognitiveservices/v1"
@@ -35,3 +58,5 @@ Get-ChildItem $inDir -Filter *.xml | ForEach-Object {
 
   Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -Body $ssml -OutFile $outFile
 }
+Write-Progress -Activity "Generating audio" -Completed
+Write-Host "Done: $total files processed."
