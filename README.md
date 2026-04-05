@@ -1,10 +1,11 @@
-# Azure AI Speech – PowerShell TTS & Avatar Batch Scripts
+# Azure AI Speech – TTS, Avatar & PptNarrator
 
-Batch-convert SSML files to **WAV audio** or **avatar video** using the [Azure AI Speech](https://learn.microsoft.com/azure/ai-services/speech-service/) REST API.  
+Batch-convert SSML files to **WAV audio** or **avatar video** using the [Azure AI Speech](https://learn.microsoft.com/azure/ai-services/speech-service/) REST API, and automatically narrate PowerPoint presentations with the **PptNarrator** console app.  
 
 Sample use cases:
  - Create audio narrations for PowerPoint slides by writing SSML files with the desired text, voice, and prosody settings.
  - Generate **talking avatar videos** — a photorealistic human speaking your text — for presentations, training materials, or advertisements.
+ - **Automatically narrate an entire PowerPoint deck** — the PptNarrator app reads speaker notes, generates audio or avatar video for each slide, and embeds the media directly into the PPTX so it auto-plays during slideshow.
  - Useful when you want to generate audio or video for multiple slides or content pieces at once.
 
 Two authentication methods are provided for each feature — choose the one that fits your environment.
@@ -19,7 +20,17 @@ Two authentication methods are provided for each feature — choose the one that
 ├── ssml/                       # Input  – place your SSML XML files here
 │   └── sample.xml              # Example SSML file
 ├── audio/                      # Output – generated WAV files (auto-created)
-└── video/                      # Output – generated avatar MP4 videos (auto-created)
+├── video/                      # Output – generated avatar MP4 videos (auto-created)
+└── PptNarrator/                # .NET console app – auto-narrate PowerPoint slides
+    ├── PptNarrator.csproj      # Project file (.NET 8)
+    ├── Program.cs              # CLI entry point & orchestration
+    ├── AppOptions.cs           # Command-line options
+    ├── NoteExtractor.cs        # Extracts speaker notes from PPTX
+    ├── SsmlBuilder.cs          # Generates SSML from plain text
+    ├── SpeechService.cs        # Azure TTS & Avatar API calls
+    ├── SlideMediaEmbedder.cs   # Embeds audio/video into PPTX slides
+    ├── input/                  # ⬆ Place your .pptx files here
+    └── output/                 # ⬇ Narrated .pptx files appear here
 ```
 
 ## Prerequisites
@@ -299,6 +310,145 @@ See [supported audio formats](https://learn.microsoft.com/azure/ai-services/spee
 | **Custom domain required** | No | Yes |
 | **RBAC role required** | No | Yes — "Cognitive Services Speech User" |
 | **Works when API keys disabled** | No | Yes |
+
+---
+
+## PptNarrator – Console App
+
+**PptNarrator** is a .NET 8 console app that automates the entire narration workflow:
+
+1. Reads **speaker notes** from each slide in a PowerPoint file  
+2. Generates **audio (WAV)** or **avatar video (MP4)** for each slide using Azure AI Speech  
+3. Embeds the media directly into a **copy** of the PPTX so it **auto-plays during slideshow**
+
+The original file is never modified — a new file with `-narrated` in the name is created.
+
+### Prerequisites
+
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or later  
+- An **Azure AI Speech** resource (same resource used by the PowerShell scripts above)  
+- For **Entra ID** auth: sign in via `az login` first  
+- For **API Key** auth: have your region and API key ready
+
+### Input & Output Folders
+
+| Folder | Path | Purpose |
+|---|---|---|
+| **Input** | `PptNarrator/input/` | Place your `.pptx` file(s) here before running the app |
+| **Output** | `PptNarrator/output/` | The narrated `.pptx` files are saved here automatically |
+
+> **Tip:** Each slide that has **speaker notes** will get narration. Slides without notes are left unchanged.
+
+### How to Run
+
+From the `PptNarrator/` directory:
+
+```powershell
+dotnet run -- <input-file> [options]
+```
+
+Or build first and run the executable:
+
+```powershell
+dotnet build
+.\bin\Debug\net8.0\PptNarrator.exe <input-file> [options]
+```
+
+### Command-Line Options
+
+| Option | Values | Default | Description |
+|---|---|---|---|
+| `<input-file>` | path to `.pptx` | *(required)* | The PowerPoint file to narrate. Place it in `input/` for convenience. |
+| `--mode` | `audio` \| `avatar` | `audio` | **audio** — generates WAV narration (hidden, plays automatically during slideshow). **avatar** — generates MP4 talking-avatar video (visible on slide, plays automatically). |
+| `--auth` | `apikey` \| `entraid` | `entraid` | **apikey** — authenticates with an Azure Speech API key. **entraid** — authenticates with your Azure AD / Entra ID identity (requires `az login`). |
+| `--voice` | voice name | `en-US-JennyNeural` | The neural TTS voice to use. See the [Voice Gallery](https://speech.microsoft.com/portal/voicegallery) for all available voices. Must match the language specified in `--lang`. |
+| `--lang` | language code | `en-US` | Language/locale code for the SSML markup (e.g. `ja-JP`, `zh-CN`, `de-DE`). Must match the voice. |
+| `--region` | Azure region | — | Azure region of your Speech resource (e.g. `swedencentral`, `eastus`). **Required when `--auth apikey`**. |
+| `--api-key` | key string | — | API key (Key 1 or Key 2) from the Azure Portal. **Required when `--auth apikey`**. |
+| `--resource-name` | resource name | — | Name of your Azure Speech resource. **Required when `--auth entraid`**. |
+| `--avatar-character` | character name | `lisa` | Avatar character to use (avatar mode only). See the avatar character tables above. |
+| `--avatar-style` | style name | `graceful-sitting` | Avatar style (avatar mode only, for standard video avatars). Leave default for photo avatars. |
+| `--output` | file path | `output/<name>-narrated.pptx` | Custom path for the output file. If omitted, the narrated file is saved to the `output/` folder. |
+
+### Example Commands
+
+#### Audio narration with Entra ID authentication
+
+```powershell
+cd PptNarrator
+dotnet run -- input\presentation.pptx --auth entraid --resource-name my-speech-resource
+```
+
+Output: `output\presentation-narrated.pptx`
+
+#### Audio narration with API Key authentication
+
+```powershell
+cd PptNarrator
+dotnet run -- input\presentation.pptx --auth apikey --region swedencentral --api-key YOUR_API_KEY
+```
+
+Output: `output\presentation-narrated.pptx`
+
+#### Avatar video with Entra ID authentication
+
+```powershell
+cd PptNarrator
+dotnet run -- input\presentation.pptx --mode avatar --auth entraid --resource-name my-speech-resource
+```
+
+Output: `output\presentation-narrated.pptx` (with avatar video on each slide)
+
+#### Custom voice and language (Japanese)
+
+```powershell
+cd PptNarrator
+dotnet run -- input\slides.pptx --auth entraid --resource-name my-speech-resource --voice ja-JP-NanamiNeural --lang ja-JP
+```
+
+#### Custom avatar character and output path
+
+```powershell
+cd PptNarrator
+dotnet run -- input\deck.pptx --mode avatar --auth apikey --region eastus --api-key KEY --avatar-character harry --avatar-style business --output C:\Presentations\final.pptx
+```
+
+### How It Works
+
+```
+input\presentation.pptx
+         │
+         ▼
+  ┌──────────────┐    Speaker notes text
+  │ NoteExtractor │──────────────────────┐
+  └──────────────┘                       │
+         │                               ▼
+         │                      ┌─────────────┐   SSML markup
+         │                      │ SsmlBuilder  │──────────┐
+         │                      └─────────────┘           │
+         │                                                ▼
+         │                                     ┌────────────────┐
+         │                                     │ SpeechService  │
+         │                                     │ (TTS / Avatar) │
+         │                                     └───────┬────────┘
+         │                                             │  .wav / .mp4
+         ▼                                             ▼
+  ┌──────────────────┐    Embed media into PPTX copy
+  │ SlideMediaEmbedder│◀───────────────────────────────┘
+  └──────────────────┘
+         │
+         ▼
+output\presentation-narrated.pptx
+  (auto-plays narration in slideshow)
+```
+
+> **Audio mode:** The audio is embedded as a hidden narration element — it plays automatically  
+> when you advance to that slide in slideshow mode, just like PowerPoint's built-in Record Narration.
+>
+> **Avatar mode:** The avatar video is embedded as a visible video element on the bottom-right  
+> corner of each slide. It also plays automatically when the slide is shown.
+
+---
 
 ## License
 
