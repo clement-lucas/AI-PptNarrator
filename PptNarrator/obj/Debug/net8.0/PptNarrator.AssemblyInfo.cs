@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PptNarrator")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b9504e509f601e124c7034adf49efaab6787dc60")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f58d315110e969eaeac4747f7fc150fd55487139")]
 [assembly: System.Reflection.AssemblyProductAttribute("PptNarrator")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PptNarrator")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
