@@ -1,0 +1,423 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using PptNarrator.Web.Services
+@inject NarrationService NarrationService
+@inject IJSRuntime JS
+
+<PageTitle>PptNarrator</PageTitle>
+
+<div class="narrator-app">
+    <header class="app-header">
+        <h1>PptNarrator</h1>
+        <p class="subtitle">Auto-narrate PowerPoint with Azure AI Speech</p>
+    </header>
+
+    @if (job is null || job.Status is "Pending")
+    {
+        <!-- ════════ UPLOAD & CONFIGURE ════════ -->
+        <section class="card config-card">
+            <h2>1. Upload Presentation</h2>
+            <div class="upload-area @(dragClass)" @ondragenter="HandleDragEnter" @ondragleave="HandleDragLeave" @ondragover:preventDefault>
+                <InputFile OnChange="HandleFileSelected" accept=".pptx" class="upload-input" />
+                <div class="upload-label">
+                    @if (selectedFile is not null)
+                    {
+                        <span class="file-icon">&#128196;</span>
+                        <span class="file-name">@selectedFile.Name</span>
+                        <span class="file-size">(@FormatSize(selectedFile.Size))</span>
+                    }
+                    else
+                    {
+                        <span class="file-icon">&#128194;</span>
+                        <span>Drag &amp; drop a <strong>.pptx</strong> file here, or click to browse</span>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section class="card config-card">
+            <h2>2. Output Mode</h2>
+            <div class="mode-selector">
+                <label class="mode-option @(mode == "audio" ? "selected" : "")">
+                    <input type="radio" name="mode" value="audio" checked="@(mode == "audio")" @onchange="@(() => mode = "audio")" />
+                    <span class="mode-icon">&#127911;</span>
+                    <span class="mode-label">Audio Narration</span>
+                    <span class="mode-desc">Hidden WAV plays automatically on each slide</span>
+                </label>
+                <label class="mode-option @(mode == "avatar" ? "selected" : "")">
+                    <input type="radio" name="mode" value="avatar" checked="@(mode == "avatar")" @onchange="@(() => mode = "avatar")" />
+                    <span class="mode-icon">&#128100;</span>
+                    <span class="mode-label">Avatar Video</span>
+                    <span class="mode-desc">Talking avatar MP4 visible on each slide</span>
+                </label>
+            </div>
+        </section>
+
+        <section class="card config-card">
+            <h2>3. Voice &amp; Language</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="language">Language</label>
+                    <select id="language" @bind="language">
+                        <option value="en-US">English (US)</option>
+                        <option value="en-GB">English (UK)</option>
+                        <option value="ja-JP">Japanese</option>
+                        <option value="zh-CN">Chinese (Simplified)</option>
+                        <option value="de-DE">German</option>
+                        <option value="fr-FR">French</option>
+                        <option value="es-ES">Spanish</option>
+                        <option value="ko-KR">Korean</option>
+                        <option value="pt-BR">Portuguese (Brazil)</option>
+                        <option value="it-IT">Italian</option>
+                        <option value="sv-SE">Swedish</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="voice">Voice</label>
+                    <select id="voice" @bind="voice">
+                        @foreach (var v in GetVoicesForLanguage())
+                        {
+                            <option value="@v.Name">@v.Label</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        @if (mode == "avatar")
+        {
+            <section class="card config-card">
+                <h2>4. Avatar Settings</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="avatarCharacter">Character</label>
+                        <select id="avatarCharacter" @bind="avatarCharacter">
+                            <optgroup label="Video Avatars (with styles)">
+                                <option value="harry">Harry</option>
+                                <option value="jeff">Jeff</option>
+                                <option value="lisa">Lisa</option>
+                                <option value="lori">Lori</option>
+                                <option value="max">Max</option>
+                                <option value="meg">Meg</option>
+                            </optgroup>
+                            <optgroup label="Photo Avatars">
+                                <option value="adrian">Adrian</option>
+                                <option value="amara">Amara</option>
+                                <option value="amira">Amira</option>
+                                <option value="anika">Anika</option>
+                                <option value="bianca">Bianca</option>
+                                <option value="camila">Camila</option>
+                                <option value="carlos">Carlos</option>
+                                <option value="clara">Clara</option>
+                                <option value="darius">Darius</option>
+                                <option value="diego">Diego</option>
+                                <option value="elise">Elise</option>
+                                <option value="farhan">Farhan</option>
+                                <option value="faris">Faris</option>
+                                <option value="gabrielle">Gabrielle</option>
+                                <option value="hyejin">Hyejin</option>
+                                <option value="imran">Imran</option>
+                                <option value="isabella">Isabella</option>
+                                <option value="layla">Layla</option>
+                                <option value="liwei">Liwei</option>
+                                <option value="ling">Ling</option>
+                                <option value="marcus">Marcus</option>
+                                <option value="matteo">Matteo</option>
+                                <option value="rahul">Rahul</option>
+                                <option value="rana">Rana</option>
+                                <option value="ren">Ren</option>
+                                <option value="riya">Riya</option>
+                                <option value="sakura">Sakura</option>
+                                <option value="simone">Simone</option>
+                                <option value="zayd">Zayd</option>
+                                <option value="zoe">Zoe</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="avatarStyle">Style</label>
+                        <select id="avatarStyle" @bind="avatarStyle" disabled="@(!IsVideoAvatar())">
+                            @foreach (var s in GetStylesForCharacter())
+                            {
+                                <option value="@s">@s</option>
+                            }
+                        </select>
+                        @if (!IsVideoAvatar())
+                        {
+                            <span class="hint">Photo avatars don't have styles</span>
+                        }
+                    </div>
+                </div>
+            </section>
+        }
+
+        <section class="card config-card">
+            <h2>@(mode == "avatar" ? "5" : "4"). Authentication</h2>
+            <div class="mode-selector">
+                <label class="mode-option compact @(auth == "entraid" ? "selected" : "")">
+                    <input type="radio" name="auth" value="entraid" checked="@(auth == "entraid")" @onchange="@(() => auth = "entraid")" />
+                    <span class="mode-label">Entra ID</span>
+                    <span class="mode-desc">Identity-based (no secrets)</span>
+                </label>
+                <label class="mode-option compact @(auth == "apikey" ? "selected" : "")">
+                    <input type="radio" name="auth" value="apikey" checked="@(auth == "apikey")" @onchange="@(() => auth = "apikey")" />
+                    <span class="mode-label">API Key</span>
+                    <span class="mode-desc">Key + Region</span>
+                </label>
+            </div>
+
+            <div class="form-row auth-fields">
+                @if (auth == "entraid")
+                {
+                    <div class="form-group">
+                        <label for="resourceName">Resource Name</label>
+                        <input id="resourceName" type="text" @bind="resourceName" placeholder="e.g. my-speech-resource" />
+                    </div>
+                }
+                else
+                {
+                    <div class="form-group">
+                        <label for="region">Region</label>
+                        <input id="region" type="text" @bind="region" placeholder="e.g. swedencentral" />
+                    </div>
+                    <div class="form-group">
+                        <label for="apiKey">API Key</label>
+                        <input id="apiKey" type="password" @bind="apiKey" placeholder="Key 1 or Key 2" />
+                    </div>
+                }
+            </div>
+        </section>
+
+        <div class="actions">
+            <button class="btn-primary" @onclick="StartNarration" disabled="@(!CanStart())">
+                &#9654; Narrate
+            </button>
+            @if (validationMessage is not null)
+            {
+                <p class="validation-msg">@validationMessage</p>
+            }
+        </div>
+    }
+    else
+    {
+        <!-- ════════ PROGRESS / RESULT ════════ -->
+        <section class="card progress-card">
+            @if (job.Status == "Processing")
+            {
+                <h2>Processing...</h2>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: @ProgressPercent()%"></div>
+                </div>
+                <p class="progress-text">@job.CurrentStep</p>
+                @if (job.TotalSlides > 0)
+                {
+                    <p class="progress-count">Slide @job.ProcessedSlides / @job.TotalSlides</p>
+                }
+                <div class="log-area">
+                    @foreach (var line in job.Log)
+                    {
+                        <div class="log-line">@line</div>
+                    }
+                </div>
+            }
+            else if (job.Status == "Completed" && job.OutputPath is not null)
+            {
+                <h2>&#10004; Narration Complete</h2>
+                <p>Your narrated presentation is ready.</p>
+                <div class="log-area">
+                    @foreach (var line in job.Log)
+                    {
+                        <div class="log-line">@line</div>
+                    }
+                </div>
+                <div class="actions">
+                    <button class="btn-primary" @onclick="DownloadResult">&#11015; Download @job.FileName</button>
+                    <button class="btn-secondary" @onclick="Reset">&#8592; Start Over</button>
+                </div>
+            }
+            else if (job.Status == "Completed" && job.OutputPath is null)
+            {
+                <h2>&#9888; No Notes Found</h2>
+                <p>@job.ErrorMessage</p>
+                <div class="actions">
+                    <button class="btn-secondary" @onclick="Reset">&#8592; Start Over</button>
+                </div>
+            }
+            else if (job.Status == "Failed")
+            {
+                <h2>&#10060; Error</h2>
+                <p class="error-text">@job.ErrorMessage</p>
+                <div class="log-area">
+                    @foreach (var line in job.Log)
+                    {
+                        <div class="log-line">@line</div>
+                    }
+                </div>
+                <div class="actions">
+                    <button class="btn-secondary" @onclick="Reset">&#8592; Start Over</button>
+                </div>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    // ── Form state ──
+    private IBrowserFile? selectedFile;
+    private string mode = "audio";
+    private string language = "en-US";
+    private string voice = "en-US-JennyNeural";
+    private string auth = "entraid";
+    private string resourceName = "";
+    private string region = "";
+    private string apiKey = "";
+    private string avatarCharacter = "lisa";
+    private string avatarStyle = "graceful-sitting";
+    private string? validationMessage;
+    private string dragClass = "";
+
+    // ── Job state ──
+    private NarrationJob? job;
+    private CancellationTokenSource? cts;
+    private Timer? refreshTimer;
+
+    // ── Voice data ──
+    private record VoiceInfo(string Name, string Label);
+
+    private static readonly Dictionary<string, VoiceInfo[]> VoicesByLanguage = new()
+    {
+        ["en-US"] = [new("en-US-JennyNeural", "Jenny (Female)"), new("en-US-GuyNeural", "Guy (Male)"), new("en-US-AriaNeural", "Aria (Female)"), new("en-US-DavisNeural", "Davis (Male)")],
+        ["en-GB"] = [new("en-GB-SoniaNeural", "Sonia (Female)"), new("en-GB-RyanNeural", "Ryan (Male)")],
+        ["ja-JP"] = [new("ja-JP-NanamiNeural", "Nanami (Female)"), new("ja-JP-KeitaNeural", "Keita (Male)")],
+        ["zh-CN"] = [new("zh-CN-XiaoxiaoNeural", "Xiaoxiao (Female)"), new("zh-CN-YunxiNeural", "Yunxi (Male)")],
+        ["de-DE"] = [new("de-DE-KatjaNeural", "Katja (Female)"), new("de-DE-ConradNeural", "Conrad (Male)")],
+        ["fr-FR"] = [new("fr-FR-DeniseNeural", "Denise (Female)"), new("fr-FR-HenriNeural", "Henri (Male)")],
+        ["es-ES"] = [new("es-ES-ElviraNeural", "Elvira (Female)"), new("es-ES-AlvaroNeural", "Alvaro (Male)")],
+        ["ko-KR"] = [new("ko-KR-SunHiNeural", "SunHi (Female)"), new("ko-KR-InJoonNeural", "InJoon (Male)")],
+        ["pt-BR"] = [new("pt-BR-FranciscaNeural", "Francisca (Female)"), new("pt-BR-AntonioNeural", "Antonio (Male)")],
+        ["it-IT"] = [new("it-IT-ElsaNeural", "Elsa (Female)"), new("it-IT-DiegoNeural", "Diego (Male)")],
+        ["sv-SE"] = [new("sv-SE-SofieNeural", "Sofie (Female)"), new("sv-SE-MattiasNeural", "Mattias (Male)")],
+    };
+
+    private static readonly HashSet<string> VideoAvatars = ["harry", "jeff", "lisa", "lori", "max", "meg"];
+
+    private static readonly Dictionary<string, string[]> AvatarStyles = new()
+    {
+        ["harry"] = ["business", "casual", "youthful"],
+        ["jeff"] = ["business", "formal"],
+        ["lisa"] = ["casual-sitting", "graceful-sitting", "graceful-standing", "technical-sitting", "technical-standing"],
+        ["lori"] = ["casual", "graceful", "formal"],
+        ["max"] = ["business", "casual", "formal"],
+        ["meg"] = ["formal", "casual", "business"],
+    };
+
+    private VoiceInfo[] GetVoicesForLanguage() =>
+        VoicesByLanguage.TryGetValue(language, out var voices) ? voices : [new("en-US-JennyNeural", "Jenny (Female)")];
+
+    private bool IsVideoAvatar() => VideoAvatars.Contains(avatarCharacter);
+
+    private string[] GetStylesForCharacter() =>
+        AvatarStyles.TryGetValue(avatarCharacter, out var styles) ? styles : ["graceful-sitting"];
+
+    private void HandleDragEnter() => dragClass = "drag-over";
+    private void HandleDragLeave() => dragClass = "";
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        dragClass = "";
+        validationMessage = null;
+    }
+
+    private bool CanStart()
+    {
+        if (selectedFile is null) return false;
+        if (auth == "entraid" && string.IsNullOrWhiteSpace(resourceName)) return false;
+        if (auth == "apikey" && (string.IsNullOrWhiteSpace(region) || string.IsNullOrWhiteSpace(apiKey))) return false;
+        return true;
+    }
+
+    private async Task StartNarration()
+    {
+        validationMessage = null;
+        if (selectedFile is null) { validationMessage = "Please select a .pptx file."; return; }
+        if (!selectedFile.Name.EndsWith(".pptx", StringComparison.OrdinalIgnoreCase))
+        {
+            validationMessage = "Please select a .pptx file.";
+            return;
+        }
+
+        var options = new PptNarrator.AppOptions
+        {
+            InputFile = "", // set by NarrationService
+            Mode = mode,
+            Auth = auth,
+            Voice = voice,
+            Language = language,
+            AvatarCharacter = avatarCharacter,
+            AvatarStyle = IsVideoAvatar() ? avatarStyle : "",
+        };
+
+        if (auth == "entraid")
+            options.ResourceName = resourceName;
+        else
+        {
+            options.Region = region;
+            options.ApiKey = apiKey;
+        }
+
+        job = new NarrationJob { FileName = selectedFile.Name };
+        cts = new CancellationTokenSource();
+
+        // Periodic UI refresh while processing
+        refreshTimer = new Timer(_ => InvokeAsync(StateHasChanged), null, 0, 500);
+
+        // Max 200 MB upload
+        await using var stream = selectedFile.OpenReadStream(maxAllowedSize: 200 * 1024 * 1024);
+        await NarrationService.ProcessAsync(stream, selectedFile.Name, options, job, cts.Token);
+
+        refreshTimer?.Dispose();
+        refreshTimer = null;
+        StateHasChanged();
+    }
+
+    private int ProgressPercent()
+    {
+        if (job is null || job.TotalSlides == 0) return 5;
+        return (int)(100.0 * job.ProcessedSlides / job.TotalSlides);
+    }
+
+    private async Task DownloadResult()
+    {
+        if (job?.OutputPath is null) return;
+        var bytes = await File.ReadAllBytesAsync(job.OutputPath);
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("downloadFile", job.FileName, base64);
+    }
+
+    private void Reset()
+    {
+        if (job is not null)
+            NarrationService.CleanupJob(job);
+        job = null;
+        selectedFile = null;
+        validationMessage = null;
+        cts?.Dispose();
+        cts = null;
+        refreshTimer?.Dispose();
+        refreshTimer = null;
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
+
+    public void Dispose()
+    {
+        refreshTimer?.Dispose();
+        cts?.Dispose();
+    }
+}

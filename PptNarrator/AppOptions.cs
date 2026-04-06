@@ -1,6 +1,6 @@
 namespace PptNarrator;
 
-class AppOptions
+public class AppOptions
 {
     public required string InputFile { get; set; }
     public string Mode { get; set; } = "audio";                   // "audio" or "avatar"

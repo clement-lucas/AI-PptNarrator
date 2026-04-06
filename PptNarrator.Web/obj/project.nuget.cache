@@ -1,0 +1,47 @@
+{
+  "version": 2,
+  "dgSpecHash": "oSu8ImwTGbg=",
+  "success": true,
+  "projectFilePath": "C:\\AIspeech\\PptNarrator.Web\\PptNarrator.Web.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\cllucas\\.nuget\\packages\\azure.core\\1.44.1\\azure.core.1.44.1.nupkg.sha512",
+    "C:\\Users\\cllucas\\.nuget\\packages\\azure.identity\\1.13.1\\azure.identity.1.13.1.nupkg.sha512",
+    "C:\\Users\\cllucas\\.nuget\\packages\\documentformat.openxml\\3.0.1\\documentformat.openxml.3.0.1.nupkg.sha512",
+    "C:\\Users\\cllucas\\.nuget\\packages\\documentformat.openxml.framework\\3.0.1\\documentformat.openxml.framework.3.0.1.nupkg.sha512",
+    "C:\\Users\\cllucas\\.nuget\\packages\\microsoft.aspnetcore.app.internal.assets\\10.0.4\\microsoft.aspnetcore.app.internal.assets.10.0.4.nupkg.sha512",
+    "C:\\Users\\cllucas\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\6.0.0\\microsoft.bcl.asyncinterfaces.6.0.0.nupkg.sha512",
+    "C:\\Users\\cllucas\\.nuget\\packages\\microsoft.identity.client\\4.66.1\\microsoft.identity.client.4.66.1.nupkg.sha512",
+    "C:\\Users\\cllucas\\.nuget\\packages\\microsoft.identity.client.extensions.msal\\4.66.1\\microsoft.identity.client.extensions.msal.4.66.1.nupkg.sha512",
+    "C:\\Users\\cllucas\\.nuget\\packages\\microsoft.identitymodel.abstractions\\6.35.0\\microsoft.identitymodel.abstractions.6.35.0.nupkg.sha512",
+    "C:\\Users\\cllucas\\.nuget\\packages\\system.clientmodel\\1.1.0\\system.clientmodel.1.1.0.nupkg.sha512",
+    "C:\\Users\\cllucas\\.nuget\\packages\\system.io.packaging\\8.0.0\\system.io.packaging.8.0.0.nupkg.sha512",
+    "C:\\Users\\cllucas\\.nuget\\packages\\system.memory.data\\6.0.0\\system.memory.data.6.0.0.nupkg.sha512",
+    "C:\\Users\\cllucas\\.nuget\\packages\\system.security.cryptography.protecteddata\\4.5.0\\system.security.cryptography.protecteddata.4.5.0.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1903",
+      "level": "Warning",
+      "message": "Package 'System.IO.Packaging' 8.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-f32c-w444-8ppv",
+      "projectPath": "C:\\AIspeech\\PptNarrator.Web\\PptNarrator.Web.csproj",
+      "warningLevel": 1,
+      "filePath": "C:\\AIspeech\\PptNarrator.Web\\PptNarrator.Web.csproj",
+      "libraryId": "System.IO.Packaging",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    },
+    {
+      "code": "NU1903",
+      "level": "Warning",
+      "message": "Package 'System.IO.Packaging' 8.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-qj66-m88j-hmgj",
+      "projectPath": "C:\\AIspeech\\PptNarrator.Web\\PptNarrator.Web.csproj",
+      "warningLevel": 1,
+      "filePath": "C:\\AIspeech\\PptNarrator.Web\\PptNarrator.Web.csproj",
+      "libraryId": "System.IO.Packaging",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    }
+  ]
+}

@@ -7,7 +7,7 @@ namespace PptNarrator;
 /// <summary>
 /// Extracts speaker notes text from each slide in a PPTX file.
 /// </summary>
-static class NoteExtractor
+public static class NoteExtractor
 {
     public record SlideNote(int SlideNumber, string Text);
 

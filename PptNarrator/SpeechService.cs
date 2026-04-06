@@ -9,7 +9,7 @@ namespace PptNarrator;
 /// <summary>
 /// Calls Azure AI Speech REST APIs for TTS audio and avatar video generation.
 /// </summary>
-sealed class SpeechService : IDisposable
+public sealed class SpeechService : IDisposable
 {
     private readonly AppOptions _opts;
     private readonly HttpClient _http = new();

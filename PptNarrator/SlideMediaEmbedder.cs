@@ -11,7 +11,7 @@ namespace PptNarrator;
 /// Audio is embedded as narration (hidden icon, plays automatically during slideshow).
 /// Video is embedded as a visible element on the slide.
 /// </summary>
-static class SlideMediaEmbedder
+public static class SlideMediaEmbedder
 {
     // 1×1 transparent PNG used as placeholder icon for audio / video poster
     private static readonly byte[] TransparentPixel = Convert.FromBase64String(

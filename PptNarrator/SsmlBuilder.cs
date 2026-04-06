@@ -5,7 +5,7 @@ namespace PptNarrator;
 /// <summary>
 /// Builds SSML markup from plain text and voice settings.
 /// </summary>
-static class SsmlBuilder
+public static class SsmlBuilder
 {
     public static string Build(string text, string voice, string language)
     {
