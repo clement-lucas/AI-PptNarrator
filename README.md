@@ -1,10 +1,13 @@
 # PptNarrator – Auto-Narrate PowerPoint with Azure AI Speech
 
-**PptNarrator** is a .NET 8 console app that automatically narrates PowerPoint presentations using [Azure AI Speech](https://learn.microsoft.com/azure/ai-services/speech-service/). It reads speaker notes from each slide, generates **audio (WAV)** or **talking avatar video (MP4)**, and embeds the media directly into a copy of the PPTX so it **auto-plays during slideshow**.
+**PptNarrator** automatically narrates PowerPoint presentations using [Azure AI Speech](https://learn.microsoft.com/azure/ai-services/speech-service/). It reads speaker notes from each slide, generates **audio (WAV)** or **talking avatar video (MP4)**, and embeds the media directly into a copy of the PPTX so it **auto-plays during slideshow**.
+
+Available as a **.NET 8 console app** and a **Blazor Server web app** — same narration engine, two interfaces.
 
 Key features:
 - **Audio mode** — generates hidden WAV narration that plays automatically on each slide, just like PowerPoint's built-in Record Narration.
 - **Avatar mode** — generates a photorealistic talking-avatar MP4 video visible on each slide.
+- **Web UI** — upload a PPTX in your browser, configure voice/avatar settings, and download the narrated file.
 - Supports both **API Key** and **Microsoft Entra ID** authentication.
 - The original file is never modified — a new file with `-narrated` in the name is created.
 
@@ -14,7 +17,7 @@ This repository also includes standalone **PowerShell scripts** for batch-conver
 
 ```
 ├── AIspeech.sln                # Solution file
-├── PptNarrator/                # .NET console app – auto-narrate PowerPoint slides
+├── PptNarrator/                # .NET 8 console app – auto-narrate PowerPoint slides
 │   ├── PptNarrator.csproj      # Project file (.NET 8)
 │   ├── Program.cs              # CLI entry point & orchestration
 │   ├── AppOptions.cs           # Command-line options
@@ -24,6 +27,18 @@ This repository also includes standalone **PowerShell scripts** for batch-conver
 │   ├── SlideMediaEmbedder.cs   # Embeds audio/video into PPTX slides
 │   ├── input/                  # ⬆ Place your .pptx files here
 │   └── output/                 # ⬇ Narrated .pptx files appear here
+├── PptNarrator.Web/            # Blazor Server web app – browser-based UI
+│   ├── PptNarrator.Web.csproj  # Project file (.NET 10)
+│   ├── Program.cs              # Web host entry point
+│   ├── Services/
+│   │   └── NarrationService.cs # Orchestrates the narration pipeline for the web UI
+│   └── Components/
+│       ├── App.razor            # HTML shell & JS interop
+│       ├── Layout/
+│       │   └── MainLayout.razor # Page layout
+│       └── Pages/
+│           ├── Home.razor       # Main upload & narration page
+│           └── Home.razor.css   # Scoped styles
 └── ps-scripts/                 # Standalone PowerShell scripts
     ├── text-to-speech-apikey.ps1   # TTS script – API Key authentication
     ├── text-to-speech-entraid.ps1  # TTS script – Entra ID authentication
@@ -38,7 +53,8 @@ This repository also includes standalone **PowerShell scripts** for batch-conver
 ## Prerequisites
 
 - An **Azure AI Speech** resource in your Azure subscription
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or later (for PptNarrator)
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or later (for the console app)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (for the web app)
 
 ### Create an Azure AI Speech Resource
 
@@ -229,6 +245,37 @@ output\presentation-narrated.pptx
 >
 > **Avatar mode:** The avatar video is embedded as a visible video element on the top-right  
 > corner of each slide. It also plays automatically when the slide is shown.
+
+---
+
+## PptNarrator.Web — Browser UI
+
+The **PptNarrator.Web** project is a Blazor Server web app that wraps the same narration engine in a browser-based interface. It references the `PptNarrator` project directly — no code duplication.
+
+### How to Run
+
+```powershell
+cd PptNarrator.Web
+dotnet run
+```
+
+The app opens your default browser automatically. If it doesn't, navigate to the URL shown in the terminal (e.g. `http://localhost:5225`).
+
+### Web UI Workflow
+
+1. **Upload** — drag & drop or browse for a `.pptx` file (up to 200 MB).
+2. **Output Mode** — choose **Audio Narration** (hidden WAV) or **Avatar Video** (visible MP4).
+3. **Voice & Language** — select from 11 languages with male/female voice options.
+4. **Avatar Settings** *(avatar mode only)* — pick a character and style from the same set listed in [Avatar Types](#avatar-types).
+5. **Authentication** — enter either **Entra ID** (resource name) or **API Key** (region + key) credentials.
+6. **Narrate** — click the button. A progress bar and live log show the status for each slide.
+7. **Download** — when complete, a Save As dialog lets you choose where to save the narrated `.pptx`.
+
+### Screenshot
+
+The web UI provides a single-page form with numbered steps, mode selection cards, voice/avatar dropdowns, and real-time processing feedback.
+
+<img src="images/web-ui-screenshot.png" alt="PptNarrator Web UI" width="70%">
 
 ---
 
